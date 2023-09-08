@@ -1,0 +1,73 @@
+#include <iostream>
+#include <opencv2/opencv.hpp>
+
+// 大津法算法
+int otsuThreshold(cv::Mat& image) {
+    int hist[256] = { 0 };
+    int totalPixels = image.rows * image.cols;
+
+    // 计算直方图
+    for (int i = 0; i < image.rows; i++) {
+        for (int j = 0; j < image.cols; j++) {
+            int pixelValue = static_cast<int>(image.at<uchar>(i, j));
+            hist[pixelValue]++;
+        }
+    }
+
+    // 计算图像内的类间方差，寻找最优阈值
+    double sum = 0.0;
+    for (int t = 0; t < 256; t++) {
+        sum += t * hist[t];
+    }
+
+    double sumB = 0.0;
+    int wB = 0;
+    int wF = 0;
+    double maxVar = 0.0;
+    int threshold = 0;
+
+    for (int t = 0; t < 256; t++) {
+        wB += hist[t];              // 前景像素点数
+        if (wB == 0) continue;
+
+        wF = totalPixels - wB;      // 背景像素点数
+        if (wF == 0) break;
+
+        sumB += static_cast<double>(t * hist[t]);
+
+        double mB = sumB / wB;      // 前景平均灰度
+        double mF = (sum - sumB) / wF;  // 背景平均灰度
+
+        // 计算类间方差
+        double varBetween = static_cast<double>(wB) * static_cast<double>(wF) * (mB - mF) * (mB - mF);
+
+        if (varBetween > maxVar) {
+            maxVar = varBetween;
+            threshold = t;
+        }
+    }
+
+    return threshold;
+}
+
+int main() {
+    cv::Mat image = cv::imread("op.jpg", cv::IMREAD_GRAYSCALE);
+
+    if (image.empty()) {
+        std::cout << "Fail to read the image!" << std::endl;
+        return -1;
+    }
+
+    int thresholdValue = otsuThreshold(image);
+
+    // 二值化图像
+    cv::Mat binaryImage;
+    cv::threshold(image, binaryImage, thresholdValue, 255, cv::THRESH_BINARY);
+    
+    cv::imshow("我是神里绫华的狗", image);
+    cv::imshow("我是神里绫华的狗", binaryImage);
+    cv::waitKey(0);
+
+    return 0;
+}
+branch test
